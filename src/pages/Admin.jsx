@@ -9,9 +9,10 @@ function Admin() {
   const [caption, setCaption] = useState('')
   const [mediaUrl, setMediaUrl] = useState('')
   const [mediaType, setMediaType] = useState('image')
-  const [extraUrls, setExtraUrls] = useState('') // comma-separated
+  const [extraUrls, setExtraUrls] = useState('')
   const [status, setStatus] = useState('')
   const [entries, setEntries] = useState([])
+  const [editingId, setEditingId] = useState(null) // null = adding new, otherwise editing this id
 
   useEffect(() => {
     loadEntries()
@@ -23,25 +24,49 @@ function Admin() {
       .catch(() => {})
   }
 
-  const addTimeline = async () => {
+  const resetForm = () => {
+    setDate('')
+    setCaption('')
+    setMediaUrl('')
+    setMediaType('image')
+    setExtraUrls('')
+    setEditingId(null)
+  }
+
+  const startEdit = (entry) => {
+    setEditingId(entry._id)
+    setDate(entry.date || '')
+    setCaption(entry.caption || '')
+    setMediaUrl(entry.mediaUrl || '')
+    setMediaType(entry.mediaType || 'image')
+    setExtraUrls(entry.extraMediaUrls || '')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const submitTimeline = async () => {
     setStatus('')
 
     try {
-      const res = await axios.post(`${API}/api/timeline`, {
-        date,
-        caption,
-        mediaUrl,
-        mediaType,
-        extraMediaUrls: extraUrls,
-        password
-      })
-      setStatus('Memory added 💗')
-      setDate('')
-      setCaption('')
-      setMediaUrl('')
-      setMediaType('image')
-      setExtraUrls('')
-      setEntries([...entries, res.data])
+      if (editingId) {
+        // UPDATE existing
+        const res = await axios.put(`${API}/api/timeline/${editingId}`, {
+          date, caption, mediaUrl, mediaType,
+          extraMediaUrls: extraUrls,
+          password
+        })
+        setStatus('Memory updated 💗')
+        setEntries(entries.map(e => e._id === editingId ? res.data : e))
+      } else {
+        // CREATE new
+        const res = await axios.post(`${API}/api/timeline`, {
+          date, caption, mediaUrl, mediaType,
+          extraMediaUrls: extraUrls,
+          password
+        })
+        setStatus('Memory added 💗')
+        setEntries([...entries, res.data])
+      }
+      resetForm()
     } catch (err) {
       setStatus('Wrong password or something went wrong.')
     }
@@ -68,7 +93,7 @@ function Admin() {
         style={styles.input}
       />
       <hr style={{ margin: '25px 0' }} />
-      <h2>Add Timeline Memory</h2>
+      <h2>{editingId ? 'Edit Memory' : 'Add Timeline Memory'}</h2>
       <input
         placeholder="Date (e.g. June 27, 2025)"
         value={date}
@@ -104,9 +129,14 @@ function Admin() {
       <p style={styles.helperText}>
         Tip: paste multiple Cloudinary links separated by commas to make this post a swipeable gallery.
       </p>
-      <button onClick={addTimeline} style={styles.button}>
-        Add Memory
+      <button onClick={submitTimeline} style={styles.button}>
+        {editingId ? 'Save Changes' : 'Add Memory'}
       </button>
+      {editingId && (
+        <button onClick={resetForm} style={styles.cancelButton}>
+          Cancel Edit
+        </button>
+      )}
       <p>{status}</p>
 
       <hr style={{ margin: '25px 0' }} />
@@ -119,9 +149,14 @@ function Admin() {
           {e.extraMediaUrls && e.extraMediaUrls.trim().length > 0 && (
             <p style={styles.entryExtra}>has extra media</p>
           )}
-          <button onClick={() => deleteEntry(e._id)} style={styles.deleteBtn}>
-            Delete
-          </button>
+          <div style={styles.entryButtons}>
+            <button onClick={() => startEdit(e)} style={styles.editBtn}>
+              Edit
+            </button>
+            <button onClick={() => deleteEntry(e._id)} style={styles.deleteBtn}>
+              Delete
+            </button>
+          </div>
         </div>
       ))}
     </div>
@@ -134,6 +169,14 @@ const styles = {
   textarea: { width: '100%', height: '80px', padding: '10px', marginBottom: '6px' },
   helperText: { fontSize: '12px', color: '#999', marginBottom: '14px' },
   button: { width: '100%', padding: '12px', cursor: 'pointer' },
+  cancelButton: {
+    width: '100%',
+    padding: '10px',
+    marginTop: '8px',
+    cursor: 'pointer',
+    background: 'transparent',
+    border: '1px solid #ccc',
+  },
   entryCard: {
     border: '1px solid #eee',
     borderRadius: '8px',
@@ -143,6 +186,16 @@ const styles = {
   entryDate: { fontSize: '12px', color: '#999', marginBottom: '4px' },
   entryCaption: { fontSize: '14px', color: '#333', marginBottom: '4px' },
   entryExtra: { fontSize: '12px', color: '#b5294e', marginBottom: '8px' },
+  entryButtons: { display: 'flex', gap: '8px' },
+  editBtn: {
+    background: 'transparent',
+    border: '1px solid #99c1f4',
+    borderRadius: '6px',
+    padding: '6px 14px',
+    fontSize: '12px',
+    color: '#3a6fb5',
+    cursor: 'pointer',
+  },
   deleteBtn: {
     background: 'transparent',
     border: '1px solid #f4c0d1',
