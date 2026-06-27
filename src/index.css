@@ -5,8 +5,8 @@
 }
 
 body {
-  font-family: 'Georgia', serif;
-  background: #fff5f7;
+  font-family: 'EB Garamond', Georgia, serif;
+  background: radial-gradient(ellipse at top, #fff7f9 0%, #fdeef2 55%, #fbe6ec 100%);
   color: #333;
   min-height: 100vh;
 }
