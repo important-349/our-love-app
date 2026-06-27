@@ -35,10 +35,10 @@ function Home({ role }) {
       <Timeline role={role} />
 
       {/* Reasons */}
-      <Reasons />
+      
 
       {/* Message Box */}
-      <MessageBox />
+      
 
       {/* Secret admin button */}
       <button
